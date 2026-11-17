@@ -1,0 +1,6 @@
+# Basura del sistema operativo
+Thumbs.db
+.DS_Store
+
+# Configuración local del editor
+.vscode/

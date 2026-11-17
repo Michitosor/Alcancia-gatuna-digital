@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Alcancía Gatuna Digital 🐱</title>
+  <!-- Tailwind CSS v3 (CDN) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Cliente de Supabase v2 (CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="min-h-screen bg-amber-50 text-stone-800">
+
+  <!-- ========== VISTA 1: LOGIN ========== -->
+  <section id="vista-login" class="hidden min-h-screen flex items-center justify-center p-4">
+    <div class="w-full max-w-md bg-white rounded-3xl shadow-lg border border-amber-100 p-8">
+      <div class="text-center">
+        <div class="text-6xl">🐱🪙</div>
+        <h1 class="mt-3 text-2xl font-extrabold text-amber-700">Alcancía Gatuna Digital</h1>
+        <p class="mt-1 text-sm text-stone-500">
+          Deposita monedas de conocimiento: ideas, conceptos y esquemas de la materia.
+        </p>
+      </div>
+
+      <form id="formulario-login" class="mt-6 space-y-4">
+        <div>
+          <label for="correo" class="block text-sm font-semibold">Correo</label>
+          <input id="correo" type="email" required placeholder="michi1@alcancia.app"
+                 class="mt-1 w-full rounded-xl border border-stone-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-400" />
+        </div>
+        <div>
+          <label for="contrasena" class="block text-sm font-semibold">Contraseña</label>
+          <input id="contrasena" type="password" required
+                 class="mt-1 w-full rounded-xl border border-stone-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-400" />
+        </div>
+        <p id="mensaje-login" class="hidden text-sm font-medium"></p>
+        <button id="boton-entrar" type="submit"
+                class="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-2.5 rounded-xl transition">
+          Entrar a la alcancía 🐾
+        </button>
+      </form>
+    </div>
+  </section>
+
+  <!-- ========== VISTA 2: LA ALCANCÍA ========== -->
+  <section id="vista-app" class="hidden">
+    <header class="bg-white border-b border-amber-100 sticky top-0 z-10">
+      <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
+        <h1 class="text-lg sm:text-xl font-extrabold text-amber-700">🐱 Alcancía Gatuna Digital</h1>
+        <div class="flex items-center gap-3">
+          <span id="nombre-usuario" class="text-sm font-semibold text-stone-600"></span>
+          <button id="boton-salir"
+                  class="text-sm bg-stone-100 hover:bg-stone-200 px-3 py-1.5 rounded-lg font-medium">
+            Salir
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main class="max-w-5xl mx-auto px-4 py-6 grid gap-6 md:grid-cols-[380px_1fr] items-start">
+
+      <!-- Formulario para depositar -->
+      <form id="formulario-entrada"
+            class="bg-white rounded-2xl shadow p-5 border border-amber-100 space-y-3">
+        <h2 class="font-bold text-lg">🪙 Depositar nueva moneda</h2>
+
+        <div>
+          <label for="titulo" class="block text-sm font-semibold">Título</label>
+          <input id="titulo" type="text" required maxlength="120"
+                 placeholder="Ej. ¿Qué es una red neuronal?"
+                 class="mt-1 w-full rounded-xl border border-stone-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-400" />
+        </div>
+
+        <div>
+          <label for="tipo" class="block text-sm font-semibold">Tipo de moneda</label>
+          <select id="tipo"
+                  class="mt-1 w-full rounded-xl border border-stone-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-amber-400">
+            <option value="idea">💡 Idea</option>
+            <option value="concepto">📘 Concepto</option>
+            <option value="esquema">🗺️ Esquema</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="tema" class="block text-sm font-semibold">Tema de la materia</label>
+          <input id="tema" type="text" required maxlength="80" placeholder="Ej. Redes neuronales"
+                 class="mt-1 w-full rounded-xl border border-stone-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-400" />
+        </div>
+
+        <div>
+          <label for="contenido" class="block text-sm font-semibold">Contenido</label>
+          <textarea id="contenido" rows="4" required
+                    placeholder="Escribe aquí tu idea, concepto o la explicación del esquema…"
+                    class="mt-1 w-full rounded-xl border border-stone-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-400"></textarea>
+        </div>
+
+        <div>
+          <label for="imagen" class="block text-sm font-semibold">Foto del esquema (opcional, máx. 5 MB)</label>
+          <input id="imagen" type="file" accept="image/*"
+                 class="mt-1 w-full text-sm text-stone-500 file:mr-3 file:rounded-lg file:border-0 file:bg-amber-100 file:px-3 file:py-1.5 file:font-semibold file:text-amber-700 hover:file:bg-amber-200" />
+        </div>
+
+        <p id="mensaje-entrada" class="hidden text-sm font-medium"></p>
+
+        <button id="boton-depositar" type="submit"
+                class="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-2.5 rounded-xl transition disabled:opacity-60">
+          Depositar moneda 🪙
+        </button>
+      </form>
+
+      <!-- La alcancía compartida -->
+      <div>
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div id="estadisticas"
+               class="flex flex-wrap gap-x-3 gap-y-1 text-sm font-semibold text-stone-600"></div>
+          <select id="filtro-tipo"
+                  class="rounded-lg border border-stone-300 px-2 py-1.5 text-sm bg-white">
+            <option value="todos">🪙 Todas</option>
+            <option value="idea">💡 Ideas</option>
+            <option value="concepto">📘 Conceptos</option>
+            <option value="esquema">🗺️ Esquemas</option>
+          </select>
+        </div>
+        <div id="lista-entradas" class="mt-4 grid gap-4"></div>
+      </div>
+    </main>
+
+    <footer class="text-center text-xs text-stone-400 pb-6">
+      Hecho con 💛 para la materia de Inteligencia Artificial · 🐾
+    </footer>
+  </section>
+
+  <script src="app.js"></script>
+</body>
+</html>
