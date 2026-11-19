@@ -1,7 +1,7 @@
 // ============================================================
 //  Alcancía Gatuna Digital 🐱🪙
-//  La clave publishable es pública por diseño: la seguridad
-//  real la dan las políticas RLS del Paso 3.
+//  Ver y depositar requieren sesión. La seguridad real la dan
+//  las políticas RLS; la clave publishable es pública por diseño.
 // ============================================================
 const URL_SUPABASE = "https://ebukjoowtcrmidnsapoz.supabase.co";
 const CLAVE_PUBLICA = "sb_publishable_Ps9SOhN4uVbxIwXP0paWuw_1OxgeNn8";
@@ -103,7 +103,7 @@ botonSalir.addEventListener("click", async () => {
   await cliente.auth.signOut();
   usuarioActual = null;
   entradas = [];
-  mostrarLogin();
+  mostrarLogin();   // al salir, vuelve a pedir login 🔒
 });
 
 // ---------- La alcancía ----------
@@ -137,6 +137,15 @@ const INSIGNIAS = {
   esquema:  { emoji: "🗺️", clases: "bg-green-100 text-green-800" },
 };
 
+// ---------- Contenido largo: "Ver más / Ver menos" ----------
+const LIMITE_CONTENIDO = 280; // caracteres antes de comprimir
+
+function resumirTexto(texto) {
+  const corte = texto.slice(0, LIMITE_CONTENIDO);
+  const ultimoEspacio = corte.lastIndexOf(" ");
+  return (ultimoEspacio > 100 ? corte.slice(0, ultimoEspacio) : corte) + "…";
+}
+
 function pintarEntradas() {
   const tipoFiltro = filtroTipo.value;
   const visibles = entradas.filter((e) => tipoFiltro === "todos" || e.tipo === tipoFiltro);
@@ -154,6 +163,17 @@ function pintarEntradas() {
       hour: "2-digit", minute: "2-digit",
     });
     const esMia = usuarioActual && e.usuario_id === usuarioActual.id;
+    const texto = e.contenido ?? "";
+    const esLargo = texto.length > LIMITE_CONTENIDO;
+
+    const contenidoHTML = esLargo
+      ? `<p class="mt-3 text-stone-700 whitespace-pre-wrap" data-corto>${escaparHTML(resumirTexto(texto))}</p>
+         <p class="mt-3 text-stone-700 whitespace-pre-wrap hidden" data-completo>${escaparHTML(texto)}</p>
+         <button data-ver-mas
+                 class="mt-1 text-sm font-semibold text-amber-600 hover:text-amber-700">
+           Ver más ▾
+         </button>`
+      : `<p class="mt-3 text-stone-700 whitespace-pre-wrap">${escaparHTML(texto)}</p>`;
 
     const imagen = e.imagen_url
       ? `<img src="${escaparHTML(e.imagen_url)}" alt="Esquema: ${escaparHTML(e.titulo)}"
@@ -179,20 +199,34 @@ function pintarEntradas() {
           </div>
           ${botonBorrar}
         </div>
-        <p class="mt-3 text-stone-700 whitespace-pre-wrap">${escaparHTML(e.contenido)}</p>
+        ${contenidoHTML}
         ${imagen}
         <p class="mt-4 text-xs text-stone-500">🐱 ${escaparHTML(e.autor)} · ${fecha}</p>
       </article>`;
   }).join("");
 }
 
-// Borrar (solo aparece en tus propias monedas; RLS lo respalda)
+// Clics dentro de la lista: expandir/contraer texto y borrar monedas propias
 listaEntradas.addEventListener("click", async (evento) => {
-  const boton = evento.target.closest("[data-borrar]");
-  if (!boton) return;
+  // 1) Ver más / Ver menos
+  const botonMas = evento.target.closest("[data-ver-mas]");
+  if (botonMas) {
+    const articulo = botonMas.closest("article");
+    const corto = articulo.querySelector("[data-corto]");
+    const completo = articulo.querySelector("[data-completo]");
+    const expandido = !completo.classList.contains("hidden");
+    completo.classList.toggle("hidden", expandido);
+    corto.classList.toggle("hidden", !expandido);
+    botonMas.textContent = expandido ? "Ver más ▾" : "Ver menos ▴";
+    return;
+  }
+
+  // 2) Borrar (solo tus monedas; RLS lo respalda)
+  const botonBorrar = evento.target.closest("[data-borrar]");
+  if (!botonBorrar) return;
   if (!confirm("¿Sacar esta moneda de la alcancía? 🗑️")) return;
 
-  const { error } = await cliente.from("entradas").delete().eq("id", boton.dataset.borrar);
+  const { error } = await cliente.from("entradas").delete().eq("id", botonBorrar.dataset.borrar);
   if (error) {
     mostrarMensaje(mensajeEntrada, "No se pudo borrar: " + error.message, true);
   }
