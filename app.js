@@ -1,14 +1,14 @@
 // ============================================================
 //  Alcancía Gatuna Digital 🐱🪙
-//  Ver y depositar requieren sesión. La seguridad real la dan
-//  las políticas RLS; la clave publishable es pública por diseño.
+//  Lectura pública (modo visitante) + escritura protegida por RLS.
+//  La clave publishable es pública por diseño.
 // ============================================================
 const URL_SUPABASE = "https://ebukjoowtcrmidnsapoz.supabase.co";
 const CLAVE_PUBLICA = "sb_publishable_Ps9SOhN4uVbxIwXP0paWuw_1OxgeNn8";
 const cliente = supabase.createClient(URL_SUPABASE, CLAVE_PUBLICA);
 
 // ---------- Estado ----------
-let usuarioActual = null;
+let usuarioActual = null;   // null = modo visitante 👀
 let entradas = [];
 
 // ---------- Referencias al DOM ----------
@@ -19,12 +19,16 @@ const formularioEntrada = document.getElementById("formulario-entrada");
 const mensajeLogin = document.getElementById("mensaje-login");
 const mensajeEntrada = document.getElementById("mensaje-entrada");
 const nombreUsuario = document.getElementById("nombre-usuario");
+const botonSesion = document.getElementById("boton-sesion");
+const botonVisitante = document.getElementById("boton-visitante");
+const avisoVisitante = document.getElementById("aviso-visitante");
+const columnaFormulario = document.getElementById("columna-formulario");
+const contenidoPrincipal = document.getElementById("contenido-principal");
 const estadisticas = document.getElementById("estadisticas");
 const filtroTipo = document.getElementById("filtro-tipo");
 const listaEntradas = document.getElementById("lista-entradas");
 const botonEntrar = document.getElementById("boton-entrar");
 const botonDepositar = document.getElementById("boton-depositar");
-const botonSalir = document.getElementById("boton-salir");
 
 // ---------- Utilidades ----------
 // Evita que alguien inyecte HTML/JS en los textos (seguridad XSS)
@@ -49,14 +53,30 @@ function mostrarMensaje(elemento, texto, esError = false) {
   elemento._temporizador = setTimeout(() => elemento.classList.add("hidden"), 4500);
 }
 
-// ---------- Sesión ----------
+// ---------- Pantallas ----------
 async function iniciar() {
   const { data } = await cliente.auth.getSession();
-  if (data.session) {
-    await entrar(data.session.user);
-  } else {
-    mostrarLogin();
-  }
+  usuarioActual = data.session?.user ?? null;
+  await mostrarApp();
+}
+
+// Muestra la alcancía en modo visitante o en modo michi con sesión
+async function mostrarApp() {
+  const conSesion = !!usuarioActual;
+
+  vistaLogin.classList.add("hidden");
+  vistaApp.classList.remove("hidden");
+
+  nombreUsuario.textContent = conSesion
+    ? "🐱 " + nombreMichi(usuarioActual.email)
+    : "👀 Visitante";
+  botonSesion.textContent = conSesion ? "Salir" : "Iniciar sesión";
+
+  avisoVisitante.classList.toggle("hidden", conSesion);
+  columnaFormulario.classList.toggle("hidden", !conSesion);
+  contenidoPrincipal.classList.toggle("md:grid-cols-[380px_1fr]", conSesion);
+
+  await cargarAlcancia();
 }
 
 function mostrarLogin() {
@@ -64,14 +84,7 @@ function mostrarLogin() {
   vistaLogin.classList.remove("hidden");
 }
 
-async function entrar(usuario) {
-  usuarioActual = usuario;
-  nombreUsuario.textContent = "🐱 " + nombreMichi(usuario.email);
-  vistaLogin.classList.add("hidden");
-  vistaApp.classList.remove("hidden");
-  await cargarAlcancia();
-}
-
+// ---------- Sesión ----------
 formularioLogin.addEventListener("submit", async (evento) => {
   evento.preventDefault();
   const correo = document.getElementById("correo").value.trim();
@@ -96,14 +109,23 @@ formularioLogin.addEventListener("submit", async (evento) => {
     return;
   }
   formularioLogin.reset();
-  await entrar(data.user);
+  usuarioActual = data.user;
+  await mostrarApp();
 });
 
-botonSalir.addEventListener("click", async () => {
-  await cliente.auth.signOut();
+botonSesion.addEventListener("click", async () => {
+  if (usuarioActual) {
+    await cliente.auth.signOut();
+    usuarioActual = null;
+    await mostrarApp();      // al salir, quedas como visitante 👀
+  } else {
+    mostrarLogin();
+  }
+});
+
+botonVisitante.addEventListener("click", async () => {
   usuarioActual = null;
-  entradas = [];
-  mostrarLogin();   // al salir, vuelve a pedir login 🔒
+  await mostrarApp();
 });
 
 // ---------- La alcancía ----------
@@ -235,7 +257,7 @@ listaEntradas.addEventListener("click", async (evento) => {
 
 filtroTipo.addEventListener("change", pintarEntradas);
 
-// ---------- Depositar ----------
+// ---------- Depositar (solo con sesión) ----------
 formularioEntrada.addEventListener("submit", async (evento) => {
   evento.preventDefault();
 
